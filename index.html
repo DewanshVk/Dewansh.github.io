@@ -1,653 +1,478 @@
-<!DOCTYPE html>
-<html lang="en">
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
 
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+        <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Portfolio of Dewansh Vishwakarma, a Junior Data Engineer skilled in Azure, Spark, Python, and cloud technologies.">
-  <meta name="keywords" content="Dewansh Vishwakarma, Data Engineer, Azure, Spark, Python, Portfolio">
-  <meta property="og:title" content="Dewansh Vishwakarma | Junior Data Engineer">
-  <meta property="og:description" content="Explore the portfolio of Dewansh Vishwakarma, showcasing data engineering projects, certifications, and skills.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://dewanshvishwakarma.com">
-  <meta property="og:image" content="images/dewansh.jpg">
-  <title>Dewansh Vishwakarma | Junior Data Engineer</title>
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <meta name="description" content="Dewansh Vishwakarma's Data Engineer Portfolio showcasing data pipelines with Azure, AWS, Python, and Spark">
+  <meta name="keywords" content="data engineer, Azure, AWS, Python, Spark, portfolio, data pipeline">
+  <title>Dewansh Vishwakarma | Junior Data Engineer Portfolio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.9/babel.min.js"></script>
   <style>
-    :root {
-      --nav-height: 70px;
+    body { font-family: 'Inter', sans-serif; margin: 0; }
+    .bg-dark { background: #1a202c; }
+    .bg-section { background: #1a202c; }
+    .card { 
+      background: #2d3748; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
+      transition: transform 0.3s ease, box-shadow 0.3s ease; 
     }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    .card:hover { 
+      transform: translateY(-5px); 
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); 
     }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f8f9fc;
-      color: #1e293b;
+    .nav-link { 
+      position: relative; 
+      transition: color 0.3s ease; 
     }
-
-    a {
-      text-decoration: none;
-      color: #2563eb;
+    .nav-link:hover::after { 
+      width: 100%; 
     }
-
-    header {
-      background-color: #0f172a;
-      color: white;
-      padding: 1rem 0;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    .nav-link::after { 
+      content: ''; 
+      position: absolute; 
+      width: 0; 
+      height: 2px; 
+      bottom: -2px; 
+      left: 0; 
+      background: #3182ce; 
+      transition: width 0.3s ease; 
     }
-
-    .btn {
-      background: #3b82f6;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 8px;
-      display: inline-block;
-      transition: background 0.3s ease;
+    .icon { 
+      transition: transform 0.3s ease, color 0.3s ease; 
     }
-
-    .btn:hover {
-      background: #2563eb;
+    .icon:hover { 
+      transform: scale(1.1); 
+      color: #3182ce; 
     }
-
-    nav {
-      position: fixed;
-      top: 0;
-      width: 100%;
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(8px);
-      z-index: 1000;
-      padding: 12px 0;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    nav .container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 40px;
-      max-width: 1200px;
-      margin: auto;
+    /* Hero Section Enhancements */
+    .hero-bg {
+      background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
       position: relative;
+      overflow: hidden;
     }
-
-    nav .logo {
-      font-size: 20px;
-      font-weight: bold;
-      color: #1e3a8a;
+    .hero-bg::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1;
     }
-
-    nav ul {
-      display: flex;
-      list-style: none;
-      gap: 1.5rem;
+    .hero-content {
+      position: relative;
+      z-index: 2;
     }
-
-    nav ul li a {
-      color: #1f2937;
-      text-decoration: none;
-      font-weight: 500;
-      transition: color 0.3s ease;
+    .text-gradient {
+      background: linear-gradient(to right, #60a5fa, #2563eb);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-
-    nav ul li a:hover {
-      color: #38bdf8;
+    .glow-button {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease;
     }
-
-    nav ul li:last-child a {
-      background: #3b82f6;
-      color: white;
-      padding: 6px 14px;
-      border-radius: 8px;
+    .glow-button:hover {
+      transform: scale(1.05);
     }
-
-    .menu-toggle {
-      display: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: #1f2937;
+    .glow-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+      );
+      animation: glow 2s infinite;
     }
-.hero {
-      background: linear-gradient(to right, #0f172a, #1e3a8a);
-      color: white;
-      text-align: center;
-      padding: 80px 20px;
+    @keyframes glow {
+      0% { left: -100%; }
+      50% { left: 100%; }
+      100% { left: 100%; }
     }
-
-    .hero h2 {
-      font-size: 2.5rem;
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-
-    .section {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 60px 20px;
-    }
-
-    .section h2 {
-      text-align: center;
-      margin-bottom: 2rem;
-      font-size: 2rem;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      transition: transform 0.3s;
-    }
-
-    .card:hover {
-      transform: translateY(-5px);
-    }
-
-.about-container {
-  display: flex;
-  align-items: flex-start; /* Better alignment for text block */
-  justify-content: center;
-  gap: 60px; /* Slightly increased for breathing room */
-  flex-wrap: wrap;
-  padding: 40px 20px; /* Add top-bottom space inside section */
-}
-.about-content {
-  flex: 1;
-  min-width: 300px;
-  max-width: 600px; /* Limit width so text doesn't stretch too wide */
-}
-
-.about-content h2 {
-  margin-bottom: 20px;
-  font-size: 28px;
-  color: #1f2937;
-}
-
-.about-content p {
-  font-size: 1.0rem;
-  line-height: 1.8;
-  color: #444;
-  margin-bottom: 16px; /* Adds space between paragraphs */
-}
-
-
-
-    .skill-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      list-style: none;
-      padding: 0;
-      margin-top: 30px;
-    }
-
-    .skill-grid li {
-      background-color: #ffffff;
-      padding: 20px;
-      border-left: 4px solid #38bdf8;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      transition: transform 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .skill-grid li:hover {
-      transform: translateY(-3px);
-    }
-
-    .skill-grid strong {
-      color: #1f2937;
-      font-weight: 600;
-    }
-
-.cert-highlight {
-  display: flex;
-  align-items: center;
-  gap: 30px;
-  padding: 30px;
-  background-color: #ffffff;
-  border-left: 6px solid #38bdf8;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  margin-bottom: 40px;
-}
-
-.cert-highlight img {
-  width: 100px;
-  height: auto;
-}
-
-.cert-highlight h3 {
-  margin-bottom: 10px;
-  color: #1f2937;
-}
-
-.cert-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 25px;
-}
-
-.cert-card {
-  background-color: #ffffff;
-  padding: 20px;
-  text-align: center;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  transition: transform 0.3s ease;
-}
-
-.cert-card:hover {
-  transform: translateY(-5px);
-}
-
-.cert-card img {
-  width: 60px;
-  height: auto;
-  margin-bottom: 10px;
-}
-
-.cert-card h4 {
-  font-size: 16px;
-  color: #1e293b;
-}
-
-.project-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 25px;
-  margin-top: 40px;
-}
-
-.project-card {
-  background-color: #ffffff;
-  padding: 25px;
-  border-radius: 12px;
-  border-left: 5px solid #38bdf8;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.project-card img {
-  width: 100%;
-  height: 160px;
-  object-fit:contain;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-
-.project-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 3 items per row */
-    gap: 30px; /* Increased gap for more space between items */
-}
-
-.project-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
-
-.project-card h3 {
-  margin-bottom: 10px;
-  font-size: 1.2rem;
-  color: #1f2937;
-}
-
-.project-card p {
-  font-size: 0.95rem;
-  color: #4b5563;
-  margin-bottom: 15px;
-}
-
-.project-card a {
-  color: #2563eb;
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.project-card a:hover {
-  text-decoration: underline;
-}
-
-
-    footer {
-      background-color: #0f172a;
-      color: white;
-      text-align: center;
-      padding: 1rem 0;
-    }
-
-    footer {
-      background-color: #0f172a;
-      color: white;
-      text-align: center;
-      padding: 1rem 0;
-    }
-
-    .back-to-top {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #3b82f6;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 50%;
-      display: none;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-
-    .back-to-top.show {
-      display: block;
-    }
- 
-    /* Responsive adjustments */
-@media (max-width: 1024px) {
-  .nav-container {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 10px 20px;
-  }
-
-  .menu-toggle {
-        display: block;
-        position: absolute;
-        right: 20px;
-        top: 50%;
-        transform: translateY(-50%);
+    .animate-fadeInUp { animation: fadeInUp 1s ease-out forwards; }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .nav-links.active { 
+        display: flex; 
+        flex-direction: column; 
+        position: absolute; 
+        top: 100%; 
+        right: 0; 
+        background: #1a202c; 
+        width: 100%; 
+        padding: 1rem; 
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
       }
-
-      nav ul {
-        display: none;
-        flex-direction: column;
-        width: 100%;
-        background: white;
-        padding: 20px;
-        position: absolute;
-        top: var(--nav-height);
-        left: 0;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      }
-
-      nav ul.show {
-        display: flex;
-      }
-
-      nav ul li {
-        margin: 10px 0;
-      }
-
-      nav ul li:last-child a {
-        padding: 8px 16px;
-      }
-
-  .about-container {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .cert-highlight {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .cert-highlight img {
-    width: 80px;
-  }
-
-  .project-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  }
-
-  .cert-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
-
-  .skill-grid {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  }
-
-  .hero h2 {
-    font-size: 1.8rem;
-  }
-
-  .section h2 {
-    font-size: 1.6rem;
-  }
-
-  nav .logo {
-    font-size: 1.2rem;
-  }
-
-}
-
+      .hamburger { display: block; }
+    }
+    @media (min-width: 641px) {
+      .hamburger { display: none; }
+      .nav-links { display: flex !important; }
+    }
+.animate-fadeIn {
+      animation: fadeIn 0.8s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .gradient-border {
+      position: relative;
+      background: #2d3748;
+      border-radius: 12px;
+      padding: 2px;
+    }
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      padding: 2px;
+      background: linear-gradient(45deg, #60a5fa, #2563eb);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+    }
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .animate-fadeInScale {
+      animation: fadeInScale 0.8s ease-out forwards;
+    }
+    .tech-icon {
+      transition: transform 0.3s ease, color 0.3s ease;
+    }
+    .tech-icon:hover {
+      transform: scale(1.2);
+      color: #60a5fa;
+    }
   </style>
 </head>
+<body class="bg-dark text-gray-200">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-<body>
-  <nav role="navigation">
-    <div class="container">
-      <div class="logo">Dewansh's Portfolio</div>
-      <span class="menu-toggle"><i class="fas fa-bars"></i></span>
-      <ul class="nav-links">
-        <li><a href="#about">About</a></li>        
-        <li><a href="#projects">Projects</a></li>
-        <li><a href="#certifications">Certifications</a></li>
-        <li><a href="#contact">Contact</a></li>
-        <li><a href="./resume/Dewansh_Vishwakarma_Resume.pdf" target="_blank">Resume</a></li>
-      </ul>
+    const App = () => {
+      const [menuOpen, setMenuOpen] = useState(false);
+
+      useEffect(() => {
+        const cards = document.querySelectorAll('.animate-fadeIn');
+        cards.forEach((card, index) => {
+          card.style.animationDelay = `${index * 0.2}s`;
+        });
+      }, []);
+
+      const toggleMenu = () => {
+        setMenuOpen(!menuOpen);
+      };
+
+      return (
+        <div>
+          <nav className="bg-dark p-4 sticky top-0 z-10">
+            <div className="container mx-auto flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-gray-200">Dewansh's Portfolio</h1>
+              <div className="hamburger md:hidden cursor-pointer" onClick={toggleMenu}>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+              </div>
+              <div className={`nav-links md:flex md:items-center md:space-x-4 ${menuOpen ? 'active' : ''}`}>
+                <a href="#projects" className="nav-link text-gray-400 block py-2 md:py-0 hover:text-gray-200">Projects</a>
+                <a href="#certifications" className="nav-link text-gray-400 block py-2 md:py-0 hover:text-gray-200">Certifications</a>
+                <a href="#contact" className="nav-link text-gray-400 block py-2 md:py-0 hover:text-gray-200">Contact</a>
+                <a href="./resume/Dewansh_Vishwakarma_Resume.pdf" className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition block text-center mt-2 md:mt-0" target="_blank">
+                  Resume
+                </a>
+              </div>
+            </div>
+          </nav>
+
+          <section class="bg-dark text-gray-200 py-16 md:py-24">
+    <div class="container mx-auto px-4 text-center animate-fadeIn">
+      <h2 class="text-4xl md:text-5xl font-extrabold mb-4 text-gray-200">
+        Dewansh Vishwakarma | Junior Data Engineer
+      </h2>
+      <p className="text-lg sm:text-xl md:text-2xl mb-8 text-center text-gradient animate-fadeInUp">
+        Transforming Data Into Insights | Skilled in Python, Azure, Spark, and Cloud Technologies
+      </p>
+      <a href="#projects" class="bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 transition">
+        Explore My Work
+      </a>
     </div>
-  </nav>
-
-  <!-- Hero Section -->
-  <section class="hero" role="banner">
-    <h2>Junior Data Engineer</h2>
-    <p>Transforming Data Into Insights | Skilled in Python, Azure, Spark, and Cloud Technologies</p>
-    <a href="#projects" class="btn" style="margin-top: 20px;">Explore My Work</a>
   </section>
 
-  <section id="about" class="section about-section">
-  <div class="container about-container">
-    <div class="about-content">
-      <h2>About Me</h2>
-      <p>Hi! I’m Dewansh — I enjoy working with data and building systems that turn it into something useful and easy to understand.</p>
-      <p>I mostly work with Python, SQL, and cloud tools like Azure and AWS to create data pipelines and automate workflows. I love solving real-world problems and building solutions that help people and teams make better decisions.</p>
-      <p>I’m always curious to learn new tools and keep improving my skills. Outside of work, I enjoy exploring tech, reading, and building small side projects just for fun.</p>
-      <p>Thanks for visiting my portfolio — feel free to connect!</p>
+<section id="about" class="bg-section py-16">
+  <div class="container mx-auto px-4">
+    <h2 class="text-4xl font-bold text-center mb-12 text-gray-200">About Me</h2>
+    <div class="gradient-border max-w-4xl mx-auto">
+      <div class="card p-8 md:p-12 rounded-lg animate-fadeInScale">
+        <p class="text-lg md:text-xl text-white leading-relaxed">
+          Hi! I’m Dewansh, a passionate Junior Data Engineer who loves turning raw data into actionable insights.
+        </p>
+        <p class="text-lg md:text-xl text-white leading-relaxed mt-6">
+          I specialize in Python, SQL, and cloud platforms like Azure and AWS, building efficient data pipelines and automating workflows to solve real-world problems.
+        </p>
+        <p class="text-lg md:text-xl text-white leading-relaxed mt-6">
+          I’m always eager to learn new tools and improve my skills, ensuring I can deliver impactful solutions for teams and businesses.
+        </p>
+        <p class="text-lg md:text-xl text-white leading-relaxed mt-6">
+          Let’s connect and create something amazing together!
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="skills" class="bg-dark py-16">
+  <div class="container mx-auto px-4">
+    <h2 class="text-4xl font-bold text-center mb-12 text-gray-200">Tech Stack</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="card p-8">
+        <div class="flex items-start space-x-2">
+          <i class="fab fa-python text-xl text-blue-400"></i>
+          <div><strong class="text-white">Languages:</strong><br/><span class="text-blue-300">Python, SQL</span></div>
+        </div>
+      </div>
+      <div class="card p-8">
+        <div class="flex items-start space-x-2">
+          <i class="fas fa-database text-xl text-blue-400"></i>
+          <div><strong class="text-white">Big Data Tools:</strong><br/><span class="text-blue-300">Apache Spark, Apache Kafka</span></div>
+        </div>
+      </div>
+      <div class="card p-8">
+        <div class="flex items-start space-x-2">
+          <i class="fab fa-microsoft text-xl text-blue-400"></i>
+          <div><strong class="text-white">Azure Services:</strong><br/><span class="text-blue-300">ADLS, ADF, Synapse, Databricks</span></div>
+        </div>
+      </div>
+      <div class="card p-8">
+        <div class="flex items-start space-x-2">
+          <i class="fab fa-aws text-xl text-blue-400"></i>
+          <div><strong class="text-white">AWS Services:</strong><br/><span class="text-blue-300">S3, Glue, EMR, Athena, Lambda, EC2, RDS, Redshift</span></div>
+        </div>
+      </div>
+      <div class="card p-8">
+        <div class="flex items-start space-x-2">
+          <i class="fas fa-wind text-xl text-blue-400"></i>
+          <div><strong class="text-white">Workflow Orchestration:</strong><br/><span class="text-blue-300">Apache Airflow</span></div>
+        </div>
+      </div>
+      <div class="card p-8">
+        <div class="flex items-start space-x-2">
+          <i class="fab fa-docker text-xl text-blue-400"></i>
+          <div><strong class="text-white">Containerization:</strong><br/><span class="text-blue-300">Docker</span></div>
+        </div>
+      </div>
+      <div class="card p-8">
+        <div class="flex items-start space-x-2">
+          <i class="fas fa-server text-xl text-blue-400"></i>
+          <div><strong class="text-white">Databases:</strong><br/><span class="text-blue-300">MySQL, PostgreSQL, MongoDB</span></div>
+        </div>
+      </div>
+      <div class="card p-8">
+        <div class="flex items-start space-x-2">
+          <i class="fas fa-tools text-xl text-blue-400"></i>
+          <div><strong class="text-white">Version Control & OS:</strong><br/><span class="text-blue-300">Git, Linux</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
+          <section id="projects" className="bg-section py-16">
+            <div className="container mx-auto px-4">
+              <h2 className="text-4xl font-bold text-center mb-12 text-gray-200">
+                Projects
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="card p-6 rounded-lg animate-fadeIn">
+                  <img src="images/architecture/fraud Architecture.png" alt="AI-Driven Fraud Detection Dashboard" className="w-full h-40 object-cover rounded-t-lg mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-200">AI-Driven Fraud Detection (Azure)</h3>
+                  <p className="text-gray-400 mt-2">
+                    Built a real-time fraud detection system using Azure Event Hub, Databricks, and Synapse. Processed 1M+ transactions/day and integrated ML-based anomaly detection with 92% accuracy.
+                  </p>
+                  <div className="mt-4 flex gap-4">
+                    <a href="https://github.com/DewanshVk/Fraud-Detection-Pipeline-Using-Azure" className="text-blue-400 hover:text-blue-300 transition" target="_blank">View on GitHub</a>
+                  </div>
+                </div>
+                <div className="card p-6 rounded-lg animate-fadeIn">
+                  <img src="images/architecture/Financial Architecture.png" alt="Financial Market Data Pipeline Dashboard" className="w-full h-40 object-cover rounded-t-lg mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-200">Financial Market Data Pipeline</h3>
+                  <p className="text-gray-400 mt-2">
+                    Designed a batch pipeline using Azure Data Factory, ADLS, and Synapse to ingest and transform financial data. Enabled automated BI reporting for 50+ stocks via Power BI.
+                  </p>
+                  <div className="mt-4 flex gap-4">
+                    <a href="https://github.com/DewanshVk/Financial-Market-Data-Pipeline-" className="text-blue-400 hover:text-blue-300 transition" target="_blank">View on GitHub</a>
+                  </div>
+                </div>
+                <div className="card p-6 rounded-lg animate-fadeIn">
+                  <img src="images/architecture/sentiment architecture.png" alt="Real-Time Twitter Sentiment Dashboard" className="w-full h-40 object-cover rounded-t-lg mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-200">Real-Time Twitter Sentiment (AWS)</h3>
+                  <p className="text-gray-400 mt-2">
+                    Developed a real-time tweet sentiment pipeline using AWS Kinesis, Lambda, and TextBlob. Stored data in S3, queried insights with Athena, and monitored performance via CloudWatch.
+                  </p>
+                  <div className="mt-4 flex gap-4">
+                    <a href="https://github.com/DewanshVk/Real-Time-Twitter-Sentiment-Analysis-using-AWS" className="text-blue-400 hover:text-blue-300 transition" target="_blank">View on GitHub</a>
+                  </div>
+                </div>
+                <div className="card p-6 rounded-lg animate-fadeIn">
+                  <img src="images/architecture/Cost op Architecture.png" alt="AWS Cost-Optimized Data Lake Dashboard" className="w-full h-40 object-cover rounded-t-lg mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-200">AWS Cost-Optimized Data Lake</h3>
+                  <p className="text-gray-400 mt-2">
+                    Engineered a serverless data lake using S3, Glue, and Athena. Enabled low-cost processing of structured and unstructured data for scalable analytics.
+                  </p>
+                  <div className="mt-4 flex gap-4">
+                    <a href="https://github.com/DewanshVk/aws-cost-optimized-data-lake" className="text-blue-400 hover:text-blue-300 transition" target="_blank">View on GitHub</a>
+                  </div>
+                </div>
+                <div className="card p-6 rounded-lg animate-fadeIn">
+                  <img src="images/architecture/olymic Architecture.png" alt="Sportalytics Olympic Insights Dashboard" className="w-full h-40 object-cover rounded-t-lg mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-200">Sportalytics: Olympic Insights (Azure)</h3>
+                  <p className="text-gray-400 mt-2">
+                    Analyzed Olympic historical data using Azure Databricks and Synapse. Built interactive dashboards to visualize medal trends, athlete performance, and country-wise insights.
+                  </p>
+                  <div className="mt-4 flex gap-4">
+                    <a href="https://github.com/DewanshVk/Sportalytics" className="text-blue-400 hover:text-blue-300 transition" target="_blank">View on GitHub</a>
+                  </div>
+                </div>
+                <div className="card p-6 rounded-lg animate-fadeIn">
+                  <img src="images/architecture/recommendation Architecture.png" alt="AWS Recommendation System Dashboard" className="w-full h-40 object-cover rounded-t-lg mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-200">AWS Recommendation System</h3>
+                  <p className="text-gray-400 mt-2">
+                    Created a movie recommendation system using AWS Lambda, S3, and collaborative filtering. Processed user ratings and generated personalized recommendations via API.
+                  </p>
+                  <div className="mt-4 flex gap-4">
+                    <a href="https://github.com/DewanshVk/AWS-Recommendation-System" className="text-blue-400 hover:text-blue-300 transition" target="_blank">View on GitHub</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
 
- <section id="skills" class="section bg-light" role="main">
-  <div class="container">
-    <h2>Tech Stack</h2>
-    <ul class="grid skill-grid">
-      <li><i class="fab fa-python"></i> <strong>Languages:</strong> Python, SQL</li>
-      <li><i class="fas fa-database"></i> <strong>Big Data Tools & Data Transformation:</strong> Apache Spark, Apache Kafka, dbt</li>
-      <li><i class="fab fa-microsoft"></i> <strong>Azure Services:</strong> ADLS, ADF, Synapse, Databricks</li>
-      <li><i class="fab fa-aws"></i> <strong>AWS Services:</strong> S3, Glue, EMR, Athena, Lambda, EC2, RDS, Redshift</li>
-      <li><i class="fas fa-wind"></i> <strong>Workflow Orchestration:</strong> Apache Airflow</li>
-      <li><i class="fas fa-snowflake"></i> <strong>Cloud Data Warehouse:</strong> Snowflake</li>
-      <li><i class="fab fa-docker"></i> <strong>Containerization:</strong> Docker</li>
-      <li><i class="fas fa-server"></i> <strong>Databases:</strong> MySQL, PostgreSQL, MongoDB</li>
-      <li><i class="fas fa-tools"></i> <strong>Version Control & OS:</strong> Git, Linux</li>
-    </ul>
-  </div>
-</section>
+          <section id="certifications" class="bg-dark py-16">
+    <div class="container mx-auto px-4">
+      <h2 class="text-4xl font-bold text-center mb-12 text-gray-200">Certifications</h2>
 
+      <div class="card p-8 rounded-lg text-center animate-fadeIn max-w-3xl mx-auto mb-12">
+        <img src="images/azure-certification-logo2.png" alt="Microsoft Azure Certification" class="w-24 h-24 mx-auto mb-4 rounded-full" />
+        <h3 class="text-2xl font-bold text-white">Microsoft Certified: Azure Data Fundamentals</h3>
+        <p class="text-white mt-4">
+          Demonstrated expertise in designing and implementing data solutions using Azure technologies such as ADLS, ADF, and Synapse.
+        </p>
+      </div>
 
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="card p-4 rounded-lg text-center animate-fadeIn">
+          <img src="images/Harvard_University_shield.png" class="w-16 h-16 mx-auto mb-4 rounded-full" />
+          <h3 class="text-base font-semibold text-white">CS50: Intro to Computer Science</h3>
+          <p class="text-white mt-2">Completed Harvard’s foundational course.</p>
+        </div>
+        <div class="card p-4 rounded-lg text-center animate-fadeIn">
+          <img src="images/python'.png" class="w-16 h-16 mx-auto mb-4 rounded-full" />
+          <h3 class="text-base font-semibold text-white">Intro to Python – Coursera</h3>
+          <p class="text-white mt-2">Gained Python programming skills via Coursera.</p>
+        </div>
+        <div class="card p-4 rounded-lg text-center animate-fadeIn">
+          <img src="images/uc_davis_logo.jpeg" class="w-16 h-16 mx-auto mb-4 rounded-full" />
+          <h3 class="text-base font-semibold text-white">SQL for Data Science – Coursera</h3>
+          <p class="text-white mt-2">Learned SQL for data querying and analytics.</p>
+        </div>
+        <div class="card p-4 rounded-lg text-center animate-fadeIn">
+          <img src="images/mongodbinc_logo.jpeg" class="w-16 h-16 mx-auto mb-4 rounded-full" />
+          <h3 class="text-base font-semibold text-white">MongoDB for Developers</h3>
+          <p class="text-white mt-2">Certified in managing NoSQL MongoDB databases.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <section id="projects" class="section">
-    <h2>Projects</h2>
-    <div class="project-grid">
-      <div class="project-card">
-        <img src="images/architecture/fraud Architecture.png" alt="Project 1">
-        <h3>AI-Driven Fraud Detection (Azure)</h3>
-        <p>Built a real-time fraud detection system using Azure Event Hub, Databricks, and Synapse. Processed 1M+ transactions/day and integrated ML-based anomaly detection with 92% accuracy.</p>
-        <a href="https://github.com/DewanshVk/Fraud-Detection-Pipeline-Using-Azure" target="_blank">View on GitHub</a>
-      </div>
-      <div class="project-card">
-        <img src="images/architecture/Financial Architecture.png" alt="Project 2">
-        <h3>Financial Market Data Pipeline</h3>
-        <p>Designed a batch pipeline using Azure Data Factory, ADLS, and Synapse to ingest and transform financial data. Enabled automated BI reporting for 50+ stocks via Power BI.</p>
-        <a href="https://github.com/DewanshVk/Financial-Market-Data-Pipeline-" target="_blank">View on GitHub</a>
-      </div>
-      <div class="project-card">
-        <img src="images/architecture/sentiment architecture.png" alt="Project 3">
-        <h3>Real-Time Twitter Sentiment (AWS)</h3>
-        <p>Developed a real-time tweet sentiment pipeline using AWS Kinesis, Lambda, and TextBlob. Stored data in S3, queried insights with Athena, and monitored performance via CloudWatch.</p>
-        <a href="https://github.com/DewanshVk/Real-Time-Twitter-Sentiment-Analysis-using-AWS" target="_blank">View on GitHub</a>
-      </div>
-      <div class="project-card">
-        <img src="images/architecture/Cost op Architecture.png" alt="Project 4">
-        <h3>AWS Cost-Optimized Data Lake</h3>
-        <p>Engineered a serverless data lake using S3, Glue, and Athena. Enabled low-cost processing of structured and unstructured data for scalable analytics.</p>
-        <a href="https://github.com/DewanshVk/aws-cost-optimized-data-lake" target="_blank">View on GitHub</a>
-      </div>
-      <div class="project-card">
-        <img src="images/architecture/olymic Architecture.png" alt="Project 5">
-        <h3>Sportalytics: Olympic Insights (Azure)</h3>
-        <p>Analyzed Olympic historical data using Azure Databricks and Synapse. Built interactive dashboards to visualize medal trends, athlete performance, and country-wise insights.</p>
-        <a href="https://github.com/DewanshVk/Sportalytics" target="_blank">View on GitHub</a>
-      </div>
-      <div class="project-card">
-        <img src="images/architecture/recommendation Architecture.png" alt="Project 6">
-        <h3>AWS Recommendation System</h3>
-        <p>Created a movie recommendation system using AWS Lambda, S3, and collaborative filtering. Processed user ratings and generated personalized recommendations via API.</p>
-        <a href="https://github.com/DewanshVk/AWS-Recommendation-System" target="_blank">View on GitHub</a>
-       </div>
+          <section id="contact" className="bg-section py-16">
+            <div className="container mx-auto px-4 text-center">
+              <h2 className="text-4xl font-bold mb-12 text-gray-200">
+                Contact Me
+              </h2>
+              <div className="card p-8 rounded-lg max-w-md mx-auto animate-fadeIn">
+                <div className="flex justify-center gap-6 flex-wrap">
+                  <a href="https://www.linkedin.com/in/dewanshvk/" target="_blank" className="icon text-gray-400">
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-1.337-.027-3.063-1.867-3.063-1.872 0-2.159 1.462-2.159 2.971v5.696h-3v-11h2.879v1.497h.041c.401-.761 1.381-1.563 2.834-1.563 3.03 0 3.593 1.994 3.593 4.586v6.48z"/></svg>
+                  </a>
+                  <a href="https://github.com/DewanshVk" target="_blank" className="icon text-gray-400">
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                  </a>
+                  <a href="https://x.com/Cloud_Levii" target="_blank" className="icon text-gray-400">
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </a>
+                  <a href="mailto:dewanshvishwarkarma0@gmail.com" className="icon text-gray-400">
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12.713l11.985-7.992c-.016-.137-.052-.271-.108-.398-.192-.437-.585-.723-1.047-.723h-22.66c-.462 0-.855.286-1.047.723-.056.127-.092.261-.108.398l11.985 7.992zm12-9.713v16c0 1.104-.896 2-2 2h-20c-1.104 0-2-.896-2-2v-16c0-.553.224-1.053.586-1.414.362-.361.861-.586 1.414-.586h20c.553 0 1.052.225 1.414.586.362.361.586.861.586 1.414zm-2 1.783l-10 6.667-10-6.667v14.217h20v-14.217z"/></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <footer className="bg-dark py-6 text-center">
+            <p className="text-gray-400">© 2025 Dewansh Vishwakarma. All Rights Reserved.</p>
+          </footer>
+        </div>
         
-    </div>
-</section>
+      );
+    };
 
-
-  <section id="certifications" class="section bg-light">
-  <div class="container">
-    <h2>Certifications</h2>
-
-    <!-- Highlighted Microsoft Certification -->
-    <div class="cert-highlight">
-      <img src="images/azure-certification-logo2.png" alt="Microsoft Azure Certification">
-      <div>
-        <h3>Microsoft Certified: Azure Data Fundamentals</h3>
-        <p>Demonstrated expertise in designing and implementing data solutions using Azure technologies such as ADLS, ADF, and Synapse.</p>
-        <!-- <a href="https://learn.microsoft.com/en-us/certifications/azure-data-engineer/" target="_blank" class="">View Certification</a> -->
-      </div>
-    </div>
-
-    <!-- Other Certifications -->
-    <div class="cert-grid">
-      <div class="cert-card">
-        <img src="images/Harvard_University_shield.png" alt="CS50">
-        <h4>CS50: Introduction to Computer Science</h4>
-      </div>
-      <div class="cert-card">
-        <img src="images/python'.png" alt="Python Course">
-        <h4>Intro to Python – Coursera</h4>
-      </div>
-      <div class="cert-card">
-        <img src="images/uc_davis_logo.jpeg" alt="SQL Course">
-        <h4>SQL for Data Science – Coursera</h4>
-      </div>
-      <div class="cert-card">
-        <img src="images/mongodbinc_logo.jpeg" alt="MongoDB">
-        <h4>MongoDB for Developers – MongoDB University</h4>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-  <section id="contact" class="section">
-    <h2>Contact Me</h2>
-  <p style="text-align: center;">
-    <a href="https://www.linkedin.com/in/dewanshvk/" title="LinkedIn" style="text-decoration: none; margin: 0 8px;">LinkedIn</a> |
-    <a href="https://github.com/DewanshVk" title="GitHub" style="text-decoration: none; margin: 0 8px;">GitHub</a> | 
-    <a href="https://x.com/Cloud_Levii" title="Twitter" style="text-decoration: none; margin: 0 8px;">Twitter</a> | 
-    <a href="mailto:dewanshvishwarkarma0@gmail.com" title="Email" style="text-decoration: none; margin: 0 8px;">Email</a>  
-    <!-- <span id="phone-link" style="cursor: pointer; color: #2563eb; text-decoration: none; margin-left: 8px;">
-      Phone
-    </span>
-    <span id="phone-number" style="display: none; margin-left: 8px; font-weight: bold;">
-      +91-9981859087 (<span id="countdown">20</span>s)
-    </span> -->
-  </p>
-  </section>
-
-  <footer>
-    <p>© 2025 Dewansh Vishwakarma. All Rights Reserved.</p>
-  </footer>
-  <div class="back-to-top" title="Back to Top"><i class="fas fa-arrow-up"></i></div>
-
-  <!-- Minimal JavaScript for interactivity -->
-  <script>
-    // Hamburger menu toggle
-    const menuToggle = document.querySelector('.menu-toggle');
-    const navLinks = document.querySelector('.nav-links');
-    menuToggle.addEventListener('click', () => {
-      navLinks.classList.toggle('show');
-    });
-
-    // Back to top button
-    const backToTop = document.querySelector('.back-to-top');
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 300) {
-        backToTop.classList.add('show');
-      } else {
-        backToTop.classList.remove('show');
-      }
-    });
-    window.addEventListener('DOMContentLoaded', () => {
-    const phoneLink = document.getElementById('phone-link');
-    const phoneNumber = document.getElementById('phone-number');
-    const countdownSpan = document.getElementById('countdown');
-
-    let timer; // define timer outside so we can clear it if needed
-
-    phoneLink.addEventListener('click', () => {
-      let timeLeft = 20;
-      countdownSpan.textContent = timeLeft;
-      phoneNumber.style.display = 'inline';
-      phoneLink.style.display = 'none';
-
-      timer = setInterval(() => {
-        timeLeft--;
-        countdownSpan.textContent = timeLeft;
-
-        if (timeLeft <= 0) {
-          clearInterval(timer);
-          phoneNumber.style.display = 'none';
-          phoneLink.style.display = 'inline';
-        }
-      }, 1000);
-    });
-  });
-
-
-    // Optional: Add Google Analytics (uncomment and replace UA-XXXXX-Y with your tracking ID)
-    /*
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-    ga('create', 'UA-XXXXX-Y', 'auto');
-    ga('send', 'pageview');
-    */
+    ReactDOM.render(<App />, document.getElementById('root'));
   </script>
 </body>
-
 </html>
